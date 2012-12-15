@@ -1,8 +1,8 @@
 
 div.container canvas{
 	left: 400px;
-	width: 800px;
-	height: 600px;
+	width: 800;
+	height: 600;
 	position: relative;
 	background-color: #aaa;
 }

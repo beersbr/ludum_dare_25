@@ -8,6 +8,7 @@
 	<script type="text/javascript" src="js/entity.js"></script>
 <script type="text/javascript">
 
+// TODO: Make this more generic to handle different particle movement routines
 function Particle(args)
 {
 	if(args == undefined)
@@ -122,7 +123,7 @@ Game.Initialize = function()
 	Game.BackCanvas.height = Game.Canvas.height;
 	Game.BackContext = Game.BackCanvas.getContext("2d");
 
-	Game.Keyboard = new KeyHandler();
+	Game.Keyboard = new KeyboardHandler();
 	Game.State = GameState_MainMenu;
 
 	// init images
@@ -131,6 +132,12 @@ Game.Initialize = function()
 
 	Game.Images["RedParticle"] = new Image();
 	Game.Images["RedParticle"].src = "img/RedParticle.png";
+
+	Game.Images["SpatterParticle"] = new Image();
+	Game.Images["SpatterParticle"].src = "img/SpatterParticle.png";
+
+	Game.Images["BoxParticle"] = new Image();
+	Game.Images["BoxParticle"].src = "img/BoxParticle.png";
 }
 
 Game.Buffer = function()
@@ -158,19 +165,19 @@ Game.Run = function()
 
 		case GameState_PauseMenu:
 		{
-			Game.PauseMenu();
+			Game.PauseMenu(elapsed_time);
 			break;
 		}
 
 		case GameState_Playing:
 		{
-			Game.Playing();
+			Game.Playing(elapsed_time);
 			break;
 		}
 	}
 
-	Game.Keyboard.Cleaner();
-	
+	Game.Keyboard.cleaner();
+
 	Game.Flip();
 
 	requestAnimFrame(Game.Run);
@@ -183,7 +190,7 @@ Game.MainMenu = function(elapsedTime)
 	// Randomly display particles on the screen
 	if(RandomInt(100) < 15)
 	{
-		var particle = new Particle({x: RandomInt(Game.Width), y: Game.Height, image: Game.Images["RedParticle"], w: 10, h: 10})
+		var particle = new Particle({x: RandomInt(Game.Width), y: Game.Height, image: Game.Images["BoxParticle"], w: 10, h: 10})
 		CurrentContext.entities.push(particle);
 	}
 
