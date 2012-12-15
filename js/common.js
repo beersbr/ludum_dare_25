@@ -15,3 +15,8 @@ requestAnimFrame = (function() {
 		window.setTimeout(callback, 1000/60);
 	};
 })();
+
+function RandomInt(max)
+{
+	return parseInt(Math.random()*max);
+}

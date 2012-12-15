@@ -8,6 +8,33 @@
 	<script type="text/javascript" src="js/entity.js"></script>
 <script type="text/javascript">
 
+function Particle(args)
+{
+	if(args == undefined)
+		args = {};
+
+	InheretFrom(this, Entity, args);
+
+	this.image = args.image || null;
+	this.wobble = 0.0;
+
+	this.Update = function(elapsedTime)
+	{
+
+		this.x += Math.sin(0.2*this.wobble)*2;
+		this.wobble += 1;
+		this.y -= (600 * elapsedTime);
+
+		return true;
+	}
+
+	this.Draw = function(rc)
+	{
+		rc.drawImage(this.image, this.x, this.y, this.w, this.h);
+		return true;
+	}
+}
+
 function Player(args)
 {
 	if(args == undefined)
@@ -17,16 +44,46 @@ function Player(args)
 
 	this.Update = function(elapsedTime, args)
 	{
+		if(args == undefined)
+			args = {};
 
+		var keyboard = args.keyboard;
+
+		if(keyboard.keyIs("a"))
+		{
+
+		}
+
+		if(keyboard.keyIs("d"))
+		{
+
+		}
+
+		if(keyboard.keyIs("w"))
+		{
+
+		}
+
+		if(keyboard.keyIs("s"))
+		{
+
+		}
+
+		return true;
 	}
 
 	this.Draw = function(rc)
 	{
-
+		return true;
 	}
 }
 
+CurrentContext = {
+	entities: []
+};
+
 Game = {};
+Game.Images = {};
 
 GameState_MainMenu = 0;
 GameState_PauseMenu = 1;
@@ -67,8 +124,26 @@ Game.Initialize = function()
 
 	Game.Keyboard = new KeyHandler();
 	Game.State = GameState_MainMenu;
+
+	// init images
+	Game.Images["MainMenuBackground"] = new Image();
+	Game.Images["MainMenuBackground"].src = "img/MainMenu.png";
+
+	Game.Images["RedParticle"] = new Image();
+	Game.Images["RedParticle"].src = "img/RedParticle.png";
 }
 
+Game.Buffer = function()
+{
+	return Game.BackContext;
+}
+
+Game.Flip = function()
+{
+	return Game.Context.drawImage(Game.BackCanvas, 0, 0, Game.Width, Game.Height);
+}
+
+// The dispatcher function
 Game.Run = function()
 {
 	var elapsed_time = Game.GetElapsedTime();
@@ -77,7 +152,7 @@ Game.Run = function()
 	{
 		case GameState_MainMenu:
 		{
-			Game.MainMenu();
+			Game.MainMenu(elapsed_time);
 			break;
 		}
 
@@ -94,12 +169,34 @@ Game.Run = function()
 		}
 	}
 
+	Game.Flip();
 	requestAnimFrame(Game.Run);
 }
 
 Game.MainMenu = function(elapsedTime)
 {
+	Game.Buffer().drawImage(Game.Images["MainMenuBackground"], 0, 0, Game.Width, Game.Height);
 
+	// Randomly display particles on the screen
+	if(RandomInt(100) < 15)
+	{
+		var particle = new Particle({x: RandomInt(Game.Width), y: Game.Height, image: Game.Images["RedParticle"], w: 10, h: 10})
+		CurrentContext.entities.push(particle);
+	}
+
+	// update the screen
+	for(var i = 0; i < CurrentContext.entities.length; i++)
+	{
+		var entity = CurrentContext.entities[i];
+		entity.Update(elapsedTime);
+	}
+
+	//draw the entities
+	for(var i = 0; i < CurrentContext.entities.length; i++)
+	{
+		var entity = CurrentContext.entities[i];
+		entity.Draw(Game.Buffer());
+	}
 }
 
 Game.PauseMenu = function(elapsedTime)
@@ -122,7 +219,7 @@ window.onload = function()
 </head>
 <body>
 	<div class="container">
-		<canvas id="game-canvas"></canvas>
+		<canvas id="game-canvas" width="800px" height="600px"></canvas>
 	</div>
 </body>
 </html>
