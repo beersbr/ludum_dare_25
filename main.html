@@ -169,7 +169,10 @@ Game.Run = function()
 		}
 	}
 
+	Game.Keyboard.Cleaner();
+	
 	Game.Flip();
+
 	requestAnimFrame(Game.Run);
 }
 
