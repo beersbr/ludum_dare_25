@@ -2,13 +2,127 @@
 <html>
 <head>
 	<title>Ludum Dare 25</title>
+	<link rel="stylesheet" type="text/css" href="css/main.css">
 	<script type="text/javascript" src="js/common.js"></script>
 	<script type="text/javascript" src="js/keyhandler.js"></script>
+	<script type="text/javascript" src="js/entity.js"></script>
 <script type="text/javascript">
+
+function Player(args)
+{
+	if(args == undefined)
+		args = {};
+
+	InheretFrom(this, Entity, args);
+
+	this.Update = function(elapsedTime, args)
+	{
+
+	}
+
+	this.Draw = function(rc)
+	{
+
+	}
+}
+
+Game = {};
+
+GameState_MainMenu = 0;
+GameState_PauseMenu = 1;
+GameState_Playing = 2;
+
+Game.Width = 800;
+Game.Height = 600;
+Game.Canvas = null;
+Game.Context = null;
+Game.BackCanvas = null;
+Game.BackContext = null;
+Game.Keyboard = null;
+Game.Mouse = null;
+Game.State = 0;
+Game.Running = false;
+
+Game.LastTime = 0.0;
+Game.CurrentTime = 0.0;
+Game.ElapsedTime = 0.0;
+
+Game.GetElapsedTime = function()
+{
+	Game.LastTime = Game.CurrentTime;
+	Game.CurrentTime = +(new Date());
+	Game.ElapsedTime = Game.CurrentTime - Game.LastTime;
+	return (Game.ElapsedTime/1000);
+}
+
+Game.Initialize = function()
+{
+	Game.Canvas = document.getElementById("game-canvas");
+	Game.Context = Game.Canvas.getContext("2d");
+
+	Game.BackCanvas = document.createElement("canvas");
+	Game.BackCanvas.width = Game.Canvas.width;
+	Game.BackCanvas.height = Game.Canvas.height;
+	Game.BackContext = Game.BackCanvas.getContext("2d");
+
+	Game.Keyboard = new KeyHandler();
+	Game.State = GameState_MainMenu;
+}
+
+Game.Run = function()
+{
+	var elapsed_time = Game.GetElapsedTime();
+
+	switch(Game.State)
+	{
+		case GameState_MainMenu:
+		{
+			Game.MainMenu();
+			break;
+		}
+
+		case GameState_PauseMenu:
+		{
+			Game.PauseMenu();
+			break;
+		}
+
+		case GameState_Playing:
+		{
+			Game.Playing();
+			break;
+		}
+	}
+
+	requestAnimFrame(Game.Run);
+}
+
+Game.MainMenu = function(elapsedTime)
+{
+
+}
+
+Game.PauseMenu = function(elapsedTime)
+{
+
+}
+
+Game.Playing = function(elapsedTime)
+{
+
+}
+
+window.onload = function()
+{
+	Game.Initialize();
+	Game.Run();
+}
 
 </script>
 </head>
 <body>
-	<canvas id="game-canvas"></canvas>
+	<div class="container">
+		<canvas id="game-canvas"></canvas>
+	</div>
 </body>
 </html>
