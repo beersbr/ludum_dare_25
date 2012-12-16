@@ -8,6 +8,18 @@
 	<script type="text/javascript" src="js/entity.js"></script>
 <script type="text/javascript">
 
+CurrentContext = {};
+function CreateContext()
+{
+	CurrentContext = {
+		timer: 0.0,
+		entities: [],
+		counter: 0
+	}
+}
+
+CreateContext();
+
 function particle_float_up(entity, elapsedTime, args)
 {
 	if(args == undefined)
@@ -95,14 +107,28 @@ function Dude(args)
 
 	InheretFrom(this, Entity, args);
 
+	this.w = 16;
+	this.h = 16;
+
+	this.image = Game.Images["BadGuy"];
+	this.frames = [0, 16];
+	this.frame_index = 0;
+	this.counter = 0;
+
 	this.Update = function(elapsedTime)
 	{
+		if(this.counter % 6 == 0)
+		{
+			this.frame_index += 1;
+		}
+		this.counter += 1;
 		return true;
 	}
 
 	this.Draw = function(rc, args)
 	{
-		return false;
+		rc.drawImage(this.image, this.frames[this.frame_index % 2], 0, 16, 16, this.x, this.y, this.w, this.h);
+		return true;
 	}
 }
 
@@ -176,7 +202,7 @@ function Bomb(args)
 				// create the particles
 				for(var i = 0; i < RandomInt(15) + 5; i++)
 				{
-					var particle = new Particle({x: this.x, y: this.y, life: RandomFloat(0.8)});
+					var particle = new Particle({x: this.x, y: this.y, life: RandomFloat(0.5)});
 					CurrentContext.entities.push(particle);
 				}
 
@@ -553,11 +579,6 @@ function Level(args)
 	}
 }
 
-CurrentContext = {
-	entities: [],
-	counter: 0
-};
-
 Game = {};
 Game.Images = {};
 
@@ -577,7 +598,7 @@ Game.State = 0;
 Game.Running = false;
 
 Game.LastTime = 0.0;
-Game.CurrentTime = 0.0;
+Game.CurrentTime = +new Date();
 Game.ElapsedTime = 0.0;
 
 Game.GetElapsedTime = function()
@@ -665,6 +686,9 @@ Game.Initialize = function()
 	Game.Images["PlayerSpriteSheet"] = new Image();
 	Game.Images["PlayerSpriteSheet"].src = "img/PlayerSpriteSheet.png";
 
+	Game.Images["BadGuy"] = new Image();
+	Game.Images["BadGuy"].src = "img/BadGuyWalking.png";
+
 	Game.Level = new Level();
 	Game.Level.InitLevel();
 
@@ -719,6 +743,8 @@ Game.MainMenu = function(elapsedTime)
 {
 	Game.Buffer().drawImage(Game.Images["MainMenuBackground"], 0, 0, Game.Width, Game.Height);
 
+	CurrentContext.timer += elapsedTime;
+
 	// Randomly display particles on the screen
 	if(RandomInt(100) < 25)
 	{
@@ -728,8 +754,11 @@ Game.MainMenu = function(elapsedTime)
 
 	if(Game.Keyboard.keyPressed("enter"))
 	{
-		Game.State = GameState_Playing;
-		CurrentContext.entities = [];
+		if(CurrentContext.timer > 2.0)
+		{
+			Game.State = GameState_Playing;
+			CurrentContext.entities = [];
+		}
 	}
 
 	// update the screen
@@ -763,6 +792,15 @@ Game.Playing = function(elapsedTime)
 	Game.Level.Draw(Game.Buffer());
 
 	Game.Player.Update(elapsedTime, {keyboard: Game.Keyboard, static_entities: Game.Level.static_entities, entities: CurrentContext.entities});
+
+	if(RandomInt(100) < 5)
+	{
+		var rx = RandomInt(25)*16;
+		var ry = RandomInt(17)*16;
+
+		var guy = new Dude({x: rx, y: ry});
+		CurrentContext.entities.push(guy);
+	}
 
 	for(var i = 0; i < CurrentContext.entities.length; i++)
 	{
