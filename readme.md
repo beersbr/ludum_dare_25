@@ -2,6 +2,10 @@
 
 A small bomberman-esque game where the goal is to stop the yourself from getting detained by the towns people and to blow up their houses for sick amounts of stacks. 
 
+Move using the WASD keys
+
+Drop a bomb with the J key
+
 ### Credits
 
 #### Graphics:
