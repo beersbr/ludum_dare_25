@@ -8,6 +8,22 @@
 	<script type="text/javascript" src="js/entity.js"></script>
 <script type="text/javascript">
 
+function particle_float_up(entity, elapsedTime, args)
+{
+	if(args == undefined)
+		args = {};
+
+	entity.x += Math.sin(0.2*(args.wobble+args.offset))*2;
+	entity.y -= (600 * elapsedTime);
+
+	return true;
+}
+
+function particle_splash(entity, elapsedTime, args)
+{
+	
+}
+
 // TODO: Make this more generic to handle different particle movement routines
 function Particle(args)
 {
@@ -17,15 +33,22 @@ function Particle(args)
 	InheretFrom(this, Entity, args);
 
 	this.image = args.image || null;
-	this.wobble = 0.0;
+	this.wobble = RandomInt(50);
 	this.life = args.life || 1.5;
 	this.lived = 0.0;
 
-	this.Update = function(elapsedTime)
+	this.Update = function(elapsedTime, fn)
 	{
 		if(this.lived > this.life)
 		{
 			return false;
+		}
+
+		if(fn != undefined)
+		{
+			var death = fn(this, elapsedTime, {wobble: CurrentContext.counter, offset: this.wobble });
+			this.lived += elapsedTime;
+			return true;
 		}
 
 		this.x += Math.sin(0.2*this.wobble)*2;
@@ -44,6 +67,24 @@ function Particle(args)
 	}
 }
 
+function Dude(args)
+{
+	if(args == undefined)
+		args = {};
+
+	InheretFrom(this, Entity, args);
+
+	this.Update = function(elapsedTime)
+	{
+		return true;
+	}
+
+	this.Draw = function(rc, args)
+	{
+		return false;
+	}
+}
+
 function Block(args)
 {
 	if(args == undefined)
@@ -51,12 +92,15 @@ function Block(args)
 
 	InheretFrom(this, Entity, args);
 
-	this.w = 32;
-	this.h = 32;
+	this.image = Game.Images["RockBlock"];
+
+	this.w = 16;
+	this.h = 16;
 
 	this.Draw = function(rc)
 	{
-		rc.drawImage(Game.Images["RockBlock"], this.x, this.y, this.w, this.h);
+		console.log("d");
+		rc.drawImage(this.image, 0, 0, 32, 32, this.x, this.y, this.w, this.h);
 		return true;
 	}
 
@@ -227,12 +271,14 @@ function Player(args)
 			args = {};
 
 		var keyboard = args.keyboard;
+		var static_entities = args.static_entities;
+		var entities = args.entities;
 
 		if(keyboard.keyPressed("j"))
 		{
 			var bomb = new Bomb({
-				x: this.x,
-				y: this.y
+				x: Math.floor(this.x),
+				y: Math.floor(this.y)
 			});
 			CurrentContext.entities.push(bomb);
 		}
@@ -260,7 +306,7 @@ function Player(args)
 		this.ax *= this.friction;
 		this.ay *= this.friction;
 
-		this.moving = (Math.abs(this.ax) < 0.05 && Math.abs(this.ay) < 0.05) ? false : true;
+		this.moving = (Math.abs(this.ax) < 0.005 && Math.abs(this.ay) < 0.005) ? false : true;
 
 		// set the direction of the player for drawing
 		if(this.moving == true)
@@ -296,6 +342,10 @@ function Player(args)
 		else
 		{
 			this.frame_pos = this.frames["down"][0];
+			this.ax = 0;
+			this.ay = 0;
+			this.x = Math.floor(this.x);
+			this.y = Math.floor(this.y);
 		}
 
 		// get the correct frame
@@ -308,6 +358,57 @@ function Player(args)
 
 		this.x += this.ax;
 		this.y += this.ay;
+
+		// check the collision against the game entities
+		for(var i = 0; i < static_entities.length; i++)
+		{
+			var entity = static_entities[i];
+
+			radius_hori = this.w/2;
+			radius_vert = this.h/2;
+			
+			center_x = this.x + radius_vert;
+			center_y = this.y + radius_hori;
+
+			entity_radius_hori = entity.w/2
+			entity_radius_vert = entity.h/2;
+			
+			entity_center_x = entity.x + entity.w/2;
+			entity_center_y = entity.y + entity.h/2;
+
+
+			if(Math.abs(center_x - entity_center_x) < (radius_hori + entity_radius_hori))
+			{
+				if(Math.abs(center_y - entity_center_y) < (radius_vert + entity_radius_vert))
+				{
+					var cdx = center_x - entity_center_x;
+					var cdy = center_y - entity_center_y;
+
+					var dx_max = radius_hori + entity_radius_hori;
+					var dy_max = radius_vert + entity_radius_vert;
+
+					var dx = dx_max - Math.abs(cdx);
+					var dy = dy_max - Math.abs(cdy);
+
+					if(Math.abs(dx) < Math.abs(dy))
+					{
+						if(cdx < 0)
+							this.x -= dx;
+						else
+							this.x += dx;
+					}
+					else
+					{
+						if(cdy < 0)
+							this.y -= dy;
+						else
+							this.y += dy;
+					}
+				}
+			}
+		}
+
+		
 
 		return true;
 	}
@@ -326,10 +427,45 @@ function Level(args)
 
 	this.tiles = [];
 	this.background_image = Game.Images["Background"];
+
+	this.background_canvas = document.createElement("canvas");
+	this.background_canvas.width = 400;
+	this.background_canvas.height = 300;
+
+	this.background_context = this.background_canvas.getContext('2d');
+
+	this.static_entities = [];
+	var counter = 0;
+
+	this.InitLevel = function()
+	{
+		for(var i = 0; i < 25; i++)
+		{
+			counter = 0;
+			for(var j = 0; j < 17; j++)
+			{
+				
+				if(counter % 2 == 0 && j % 2 == 0 && i % 3 == 0)
+				{
+					var block = new Block({x: i*16, y: j*16});
+					this.static_entities.push(block);
+					this.background_context.drawImage(block.image, 0, 0, 32, 32, i*16, j*16, 16, 16);
+				} 
+				counter += 1;
+			}
+		}
+	}
+
+	this.Draw = function(rc)
+	{
+		rc.drawImage(this.background_canvas, 0, 0, Game.Width, Game.Height);
+		return true;
+	}
 }
 
 CurrentContext = {
-	entities: []
+	entities: [],
+	counter: 0
 };
 
 Game = {};
@@ -439,7 +575,10 @@ Game.Initialize = function()
 	Game.Images["PlayerSpriteSheet"] = new Image();
 	Game.Images["PlayerSpriteSheet"].src = "img/PlayerSpriteSheet.png";
 
-	Game.Player = new Player({x: 100, y:100});
+	Game.Level = new Level();
+	Game.Level.InitLevel();
+
+	Game.Player = new Player({x: 16, y:100});
 }
 
 Game.Buffer = function()
@@ -478,6 +617,7 @@ Game.Run = function()
 		}
 	}
 
+	CurrentContext.counter += 1;
 	Game.Keyboard.cleaner();
 
 	Game.Flip();
@@ -506,7 +646,7 @@ Game.MainMenu = function(elapsedTime)
 	for(var i = 0; i < CurrentContext.entities.length; i++)
 	{
 		var entity = CurrentContext.entities[i];
-		var died = entity.Update(elapsedTime);
+		var died = entity.Update(elapsedTime, particle_float_up);
 
 		if(!died)
 		{
@@ -530,8 +670,9 @@ Game.PauseMenu = function(elapsedTime)
 Game.Playing = function(elapsedTime)
 {
 	Game.Buffer().drawImage(Game.Images["Background"], 0, 0, Game.Width, Game.Height);
+	Game.Level.Draw(Game.Buffer());
 
-	Game.Player.Update(elapsedTime, {keyboard: Game.Keyboard});
+	Game.Player.Update(elapsedTime, {keyboard: Game.Keyboard, static_entities: Game.Level.static_entities, entities: CurrentContext.entities});
 
 	for(var i = 0; i < CurrentContext.entities.length; i++)
 	{
@@ -542,6 +683,12 @@ Game.Playing = function(elapsedTime)
 		{
 			CurrentContext.entities.splice(i, 1);
 		}
+	}
+
+	for(var i = 0; i < Game.Level.static_entities.length; i++)
+	{
+		var entity = Game.Level.static_entities[i];
+		var death = entity.Update(elapsedTime);
 	}
 
 	for(var i = 0; i < CurrentContext.entities.length; i++)
