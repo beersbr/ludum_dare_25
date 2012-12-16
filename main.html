@@ -62,6 +62,9 @@ function Block(args)
 
 }
 
+Bomb_Fuse = 0;
+Bomb_Blow = 1;
+
 function Bomb(args)
 {
 	if(args == undefined)
@@ -69,10 +72,7 @@ function Bomb(args)
 
 	InheretFrom(this, Entity, args);
 
-	Bomb.Fuse = 0;
-	Bomb.Blow = 1;
-
-	this.magnitude = 1;
+	this.magnitude = 2;
 
 	this.life = args.life || 3;
 	this.lived = 0.0;
@@ -82,16 +82,16 @@ function Bomb(args)
 	this.w = 32;
 	this.h = 32;
 
-	this.mode = Bomb.Fuse;
+	this.mode = Bomb_Fuse;
 
-	this.frames = [Game.Images["Bomb0"], 
+	this.fuse_frames = [Game.Images["Bomb0"], 
 					Game.Images["Bomb1"], 
 					Game.Images["Bomb2"], 
 					Game.Images["Bomb3"], 
 					Game.Images["Bomb4"], 
 					Game.Images["Bomb5"]]
 
-	this.current_frame = this.frames[0];
+	this.current_frame = this.fuse_frames[0];
 	this.current_frame_index = 0;
 
 	this.counter = 0;
@@ -100,15 +100,30 @@ function Bomb(args)
 	{
 		if(this.lived > this.life)
 		{
-			if(Bomb.mode == Bomb.Fuse)
+
+			if(this.mode == Bomb_Fuse)
 			{
-				Bomb.mode = Bomb.Blow;
-				this.life = 0.5;
-				this.lived = 0.0; 
+				this.mode = Bomb_Blow;
+				this.life = 0.16;
+				this.lived = 0.0;
+			}
+			else
+			{
+				if(this.magnitude > 0)
+				{
+					this.magnitude -= 1;
+					this.life = 0.16;
+					this.lived = 0.0;
+				}
+				else
+				{
+					return false;	
+				}
+				
 			}
 		}
 
-		if(this.mode == Bomb.Fuse)
+		if(this.mode == Bomb_Fuse)
 		{
 			// only update every other frame to one of the 6 frames
 			if(this.counter % 6 == 0)
@@ -130,9 +145,9 @@ function Bomb(args)
 				this.frame_life += 1;
 			}
 		}
-		if(this.mode == Bomb.Blow)
+		if(this.mode == Bomb_Blow)
 		{
-
+			// get the explosion cross and check the collisions * magnitude
 		}
 
 		this.lived += elapsedTime
@@ -143,8 +158,29 @@ function Bomb(args)
 
 	this.Draw = function(rc)
 	{
-		this.current_frame = this.frames[this.current_frame_index];
-		rc.drawImage(this.current_frame, this.x, this.y, this.w, this.h);
+		if(this.mode == Bomb_Fuse)
+		{
+			this.current_frame = this.fuse_frames[this.current_frame_index];
+		}
+		if(this.mode == Bomb_Blow)
+		{
+			this.current_frame = Game.Images["BombExplosionMiddle"];
+
+			for(var i = 0; i < this.magnitude; i++)
+			{
+				rc.drawImage(Game.Images["BombExplosionVertical"], 0, 0, 16, 16, this.x, this.y - 16*(i+1), 16, 16);
+				rc.drawImage(Game.Images["BombExplosionVertical"], 0, 0, 16, 16, this.x, this.y + 16*(i+1), 16, 16);
+				rc.drawImage(Game.Images["BombExplosionHorizontal"], 0, 0, 16, 16, this.x - 16*(i+1), this.y, 16, 16);
+				rc.drawImage(Game.Images["BombExplosionHorizontal"], 0, 0, 16, 16, this.x + 16*(i+1), this.y, 16, 16);
+			}
+
+			rc.drawImage(Game.Images["BombExplosionDown"], 0, 0, 16, 16, this.x, this.y + 16*(this.magnitude+1), 16, 16);
+			rc.drawImage(Game.Images["BombExplosionUp"], 0, 0, 16, 16, this.x, this.y - 16*(this.magnitude+1), 16, 16);
+			rc.drawImage(Game.Images["BombExplosionLeft"], 0, 0, 16, 16, this.x - 16*(this.magnitude+1), this.y, 16, 16);
+			rc.drawImage(Game.Images["BombExplosionRight"], 0, 0, 16, 16, this.x + 16*(this.magnitude+1), this.y, 16, 16);
+		}
+		
+		rc.drawImage(this.current_frame, 0, 0, 16, 16, this.x, this.y, 16, 16);
 		return true;
 	}
 }
@@ -163,8 +199,8 @@ function Player(args)
 
 	InheretFrom(this, Entity, args);
 
-	this.w = 32;
-	this.h = 32;
+	this.w = 16;
+	this.h = 16;
 	this.power = 20;
 	this.friction = 0.85;
 
@@ -373,6 +409,27 @@ Game.Initialize = function()
 	Game.Images["Bomb5"] = new Image();
 	Game.Images["Bomb5"].src = "img/Bomb5.png";
 
+	Game.Images["BombExplosionMiddle"] = new Image();
+	Game.Images["BombExplosionMiddle"].src = "img/BombExplosionMiddle.png";
+
+	Game.Images["BombExplosionHorizontal"] = new Image();
+	Game.Images["BombExplosionHorizontal"].src = "img/BombExplosionHorizontal.png";
+
+	Game.Images["BombExplosionVertical"] = new Image();
+	Game.Images["BombExplosionVertical"].src = "img/BombExplosionVertical.png";
+
+	Game.Images["BombExplosionLeft"] = new Image();
+	Game.Images["BombExplosionLeft"].src = "img/BombExplosionLeft.png";
+
+	Game.Images["BombExplosionUp"] = new Image();
+	Game.Images["BombExplosionUp"].src = "img/BombExplosionUp.png";
+
+	Game.Images["BombExplosionRight"] = new Image();
+	Game.Images["BombExplosionRight"].src = "img/BombExplosionRight.png";
+
+	Game.Images["BombExplosionDown"] = new Image();
+	Game.Images["BombExplosionDown"].src = "img/BombExplosionDown.png";
+
 	Game.Images["GuyFront"] = new Image();
 	Game.Images["GuyFront"].src = "img/GuyFront0.png";
 
@@ -479,7 +536,12 @@ Game.Playing = function(elapsedTime)
 	for(var i = 0; i < CurrentContext.entities.length; i++)
 	{
 		var entity = CurrentContext.entities[i];
-		entity.Update(elapsedTime);
+		var death = entity.Update(elapsedTime);
+
+		if(!death)
+		{
+			CurrentContext.entities.splice(i, 1);
+		}
 	}
 
 	for(var i = 0; i < CurrentContext.entities.length; i++)
