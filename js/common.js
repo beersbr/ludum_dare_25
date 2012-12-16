@@ -20,3 +20,8 @@ function RandomInt(max)
 {
 	return parseInt(Math.random()*max);
 }
+
+function RandomFloat(max)
+{
+	return parseFloat(Math.random()*max);
+}

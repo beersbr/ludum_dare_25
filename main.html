@@ -18,13 +18,21 @@ function Particle(args)
 
 	this.image = args.image || null;
 	this.wobble = 0.0;
+	this.life = args.life || 1.5;
+	this.lived = 0.0;
 
 	this.Update = function(elapsedTime)
 	{
+		if(this.lived > this.life)
+		{
+			return false;
+		}
 
 		this.x += Math.sin(0.2*this.wobble)*2;
 		this.wobble += 1;
 		this.y -= (600 * elapsedTime);
+
+		this.lived += elapsedTime;
 
 		return true;
 	}
@@ -36,12 +44,146 @@ function Particle(args)
 	}
 }
 
+function Block(args)
+{
+	if(args == undefined)
+		args = {};
+
+	InheretFrom(this, Entity, args);
+
+	this.w = 32;
+	this.h = 32;
+
+	this.Draw = function(rc)
+	{
+		rc.drawImage(Game.Images["RockBlock"], this.x, this.y, this.w, this.h);
+		return true;
+	}
+
+}
+
+function Bomb(args)
+{
+	if(args == undefined)
+		args = {};
+
+	InheretFrom(this, Entity, args);
+
+	Bomb.Fuse = 0;
+	Bomb.Blow = 1;
+
+	this.magnitude = 1;
+
+	this.life = args.life || 3;
+	this.lived = 0.0;
+
+	this.frame_life = 0;
+
+	this.w = 32;
+	this.h = 32;
+
+	this.mode = Bomb.Fuse;
+
+	this.frames = [Game.Images["Bomb0"], 
+					Game.Images["Bomb1"], 
+					Game.Images["Bomb2"], 
+					Game.Images["Bomb3"], 
+					Game.Images["Bomb4"], 
+					Game.Images["Bomb5"]]
+
+	this.current_frame = this.frames[0];
+	this.current_frame_index = 0;
+
+	this.counter = 0;
+
+	this.Update = function(elapsedTime)
+	{
+		if(this.lived > this.life)
+		{
+			if(Bomb.mode == Bomb.Fuse)
+			{
+				Bomb.mode = Bomb.Blow;
+				this.life = 0.5;
+				this.lived = 0.0; 
+			}
+		}
+
+		if(this.mode == Bomb.Fuse)
+		{
+			// only update every other frame to one of the 6 frames
+			if(this.counter % 6 == 0)
+			{
+				if(this.lived < this.life * (1/3))
+				{
+					this.current_frame_index = (this.frame_life % 2);
+				}
+				else if(this.lived < this.life * (2/3) 
+					&& this.lived > this.life * (1/3))
+				{
+					this.current_frame_index = (this.frame_life % 2) + 2;
+				}
+				else if(this.lived < this.life 
+					&& this.lived > this.life * (2/3))
+				{
+					this.current_frame_index = (this.frame_life % 2) + 4;
+				};
+				this.frame_life += 1;
+			}
+		}
+		if(this.mode == Bomb.Blow)
+		{
+
+		}
+
+		this.lived += elapsedTime
+		this.counter += 1;
+
+		return true;
+	}
+
+	this.Draw = function(rc)
+	{
+		this.current_frame = this.frames[this.current_frame_index];
+		rc.drawImage(this.current_frame, this.x, this.y, this.w, this.h);
+		return true;
+	}
+}
+
+Direction = {
+	DOWN: 0,
+	LEFT: 1,
+	RIGHT: 2,
+	UP: 3
+}
+
 function Player(args)
 {
 	if(args == undefined)
 		args = {};
 
 	InheretFrom(this, Entity, args);
+
+	this.w = 32;
+	this.h = 32;
+	this.power = 20;
+	this.friction = 0.85;
+
+	this.moving = false;
+	this.direction = Direction.DOWN;
+	this.counter = 0;
+
+	this.image = Game.Images["PlayerSpriteSheet"];
+
+	this.frames = {
+		down: [16, 32, 48],
+		left: [160, 176, 192],
+		right: [64, 80, 96],
+		up: [0, 128, 144]
+	}
+	this.frame_set = this.frames["front"];
+	this.frame_pos = 16;
+
+	this.frame_index = 0;
 
 	this.Update = function(elapsedTime, args)
 	{
@@ -50,33 +192,104 @@ function Player(args)
 
 		var keyboard = args.keyboard;
 
-		if(keyboard.keyIs("a"))
+		if(keyboard.keyPressed("j"))
 		{
-
+			var bomb = new Bomb({
+				x: this.x,
+				y: this.y
+			});
+			CurrentContext.entities.push(bomb);
 		}
 
-		if(keyboard.keyIs("d"))
+		if(keyboard.keyIsDown("a"))
 		{
-
+			this.ax -= (this.power*elapsedTime);
 		}
 
-		if(keyboard.keyIs("w"))
+		if(keyboard.keyIsDown("d"))
 		{
-
+			this.ax += (this.power*elapsedTime);
 		}
 
-		if(keyboard.keyIs("s"))
+		if(keyboard.keyIsDown("w"))
 		{
-
+			this.ay -= (this.power*elapsedTime);
 		}
+
+		if(keyboard.keyIsDown("s"))
+		{
+			this.ay += (this.power*elapsedTime);
+		}
+
+		this.ax *= this.friction;
+		this.ay *= this.friction;
+
+		this.moving = (Math.abs(this.ax) < 0.05 && Math.abs(this.ay) < 0.05) ? false : true;
+
+		// set the direction of the player for drawing
+		if(this.moving == true)
+		{
+			if(Math.abs(this.ax) > Math.abs(this.ay))
+			{
+				if(this.ax > 0)
+				{
+					this.direction = Direction.RIGHT;
+					this.frame_set = this.frames["right"];
+				}
+				else
+				{
+					this.direction = Direction.LEFT;
+					this.frame_set = this.frames["left"];
+				}
+			}
+			else
+			{
+				if(this.ay > 0)
+				{
+					this.direction = Direction.DOWN;
+					this.frame_set = this.frames["down"];
+				}
+				else
+				{
+					this.direction = Direction.UP;
+					this.frame_set = this.frames["up"];	
+				}
+			}
+			this.frame_pos = this.frame_set[this.frame_index % 3];
+		}
+		else
+		{
+			this.frame_pos = this.frames["down"][0];
+		}
+
+		// get the correct frame
+		if(this.counter % 6 == 0)
+		{
+			this.frame_index += 1;
+		}		
+
+		this.counter += 1;
+
+		this.x += this.ax;
+		this.y += this.ay;
 
 		return true;
 	}
 
 	this.Draw = function(rc)
 	{
+		rc.drawImage(this.image, this.frame_pos, 0, 16, 16, this.x, this.y, this.w, this.h)
 		return true;
 	}
+}
+
+function Level(args)
+{
+	if(args == undefined)
+		args = {};
+
+	this.tiles = [];
+	this.background_image = Game.Images["Background"];
 }
 
 CurrentContext = {
@@ -90,8 +303,8 @@ GameState_MainMenu = 0;
 GameState_PauseMenu = 1;
 GameState_Playing = 2;
 
-Game.Width = 800;
-Game.Height = 600;
+Game.Width = 400;
+Game.Height = 300;
 Game.Canvas = null;
 Game.Context = null;
 Game.BackCanvas = null;
@@ -138,6 +351,38 @@ Game.Initialize = function()
 
 	Game.Images["BoxParticle"] = new Image();
 	Game.Images["BoxParticle"].src = "img/BoxParticle.png";
+
+	Game.Images["RockBlock"] = new Image();
+	Game.Images["RockBlock"].src = "img/RockBlock.png";
+
+	Game.Images["Bomb0"] = new Image();
+	Game.Images["Bomb0"].src = "img/Bomb0.png";
+
+	Game.Images["Bomb1"] = new Image();
+	Game.Images["Bomb1"].src = "img/Bomb1.png";
+
+	Game.Images["Bomb2"] = new Image();
+	Game.Images["Bomb2"].src = "img/Bomb2.png";
+
+	Game.Images["Bomb3"] = new Image();
+	Game.Images["Bomb3"].src = "img/Bomb3.png";
+
+	Game.Images["Bomb4"] = new Image();
+	Game.Images["Bomb4"].src = "img/Bomb4.png";
+
+	Game.Images["Bomb5"] = new Image();
+	Game.Images["Bomb5"].src = "img/Bomb5.png";
+
+	Game.Images["GuyFront"] = new Image();
+	Game.Images["GuyFront"].src = "img/GuyFront0.png";
+
+	Game.Images["Background"] = new Image();
+	Game.Images["Background"].src = "img/PlayBackground.png";
+
+	Game.Images["PlayerSpriteSheet"] = new Image();
+	Game.Images["PlayerSpriteSheet"].src = "img/PlayerSpriteSheet.png";
+
+	Game.Player = new Player({x: 100, y:100});
 }
 
 Game.Buffer = function()
@@ -190,15 +435,26 @@ Game.MainMenu = function(elapsedTime)
 	// Randomly display particles on the screen
 	if(RandomInt(100) < 15)
 	{
-		var particle = new Particle({x: RandomInt(Game.Width), y: Game.Height, image: Game.Images["BoxParticle"], w: 10, h: 10})
+		var particle = new Particle({x: RandomInt(Game.Width), y: Game.Height, image: Game.Images["BoxParticle"], w: 10, h: 10, life: RandomFloat(2)})
 		CurrentContext.entities.push(particle);
+	}
+
+	if(Game.Keyboard.keyPressed("enter"))
+	{
+		Game.State = GameState_Playing;
+		CurrentContext.entities = [];
 	}
 
 	// update the screen
 	for(var i = 0; i < CurrentContext.entities.length; i++)
 	{
 		var entity = CurrentContext.entities[i];
-		entity.Update(elapsedTime);
+		var died = entity.Update(elapsedTime);
+
+		if(!died)
+		{
+			CurrentContext.entities.splice(i, 1);
+		}
 	}
 
 	//draw the entities
@@ -216,7 +472,23 @@ Game.PauseMenu = function(elapsedTime)
 
 Game.Playing = function(elapsedTime)
 {
+	Game.Buffer().drawImage(Game.Images["Background"], 0, 0, Game.Width, Game.Height);
 
+	Game.Player.Update(elapsedTime, {keyboard: Game.Keyboard});
+
+	for(var i = 0; i < CurrentContext.entities.length; i++)
+	{
+		var entity = CurrentContext.entities[i];
+		entity.Update(elapsedTime);
+	}
+
+	for(var i = 0; i < CurrentContext.entities.length; i++)
+	{
+		var entity = CurrentContext.entities[i];
+		entity.Draw(Game.Buffer());
+	}	
+
+	Game.Player.Draw(Game.Buffer());
 }
 
 window.onload = function()
@@ -229,7 +501,7 @@ window.onload = function()
 </head>
 <body>
 	<div class="container">
-		<canvas id="game-canvas" width="800px" height="600px"></canvas>
+		<canvas id="game-canvas" width="400px" height="300px"></canvas>
 	</div>
 </body>
 </html>
