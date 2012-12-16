@@ -21,7 +21,21 @@ function particle_float_up(entity, elapsedTime, args)
 
 function particle_splash(entity, elapsedTime, args)
 {
-	
+	if(args == undefined)
+		args = {};
+
+	if(entity.ax == 0 || entity.ay == 0)
+	{
+		var angle = RandomFloat(Math.PI * 2);
+
+		entity.ax = Math.cos(angle);
+		entity.ay = Math.sin(angle);
+	}
+
+	entity.x += (entity.ax*150) * elapsedTime;
+	entity.y += (entity.ay*150) * elapsedTime;
+
+	return true;
 }
 
 // TODO: Make this more generic to handle different particle movement routines
@@ -30,9 +44,14 @@ function Particle(args)
 	if(args == undefined)
 		args = {};
 
+	this.ClassName = "Particle";
+
 	InheretFrom(this, Entity, args);
 
-	this.image = args.image || null;
+	this.w = args.w || 8;
+	this.h = args.h || 8;
+
+	this.image = args.image || Game.Images["BoxParticle"];
 	this.wobble = RandomInt(50);
 	this.life = args.life || 1.5;
 	this.lived = 0.0;
@@ -62,7 +81,7 @@ function Particle(args)
 
 	this.Draw = function(rc)
 	{
-		rc.drawImage(this.image, this.x, this.y, this.w, this.h);
+		rc.drawImage(this.image, this.x, this.y, 4, 4);
 		return true;
 	}
 }
@@ -71,6 +90,8 @@ function Dude(args)
 {
 	if(args == undefined)
 		args = {};
+
+	this.ClassName = "Dude";
 
 	InheretFrom(this, Entity, args);
 
@@ -90,6 +111,8 @@ function Block(args)
 	if(args == undefined)
 		args = {};
 
+	this.ClassName = "Block";
+
 	InheretFrom(this, Entity, args);
 
 	this.image = Game.Images["RockBlock"];
@@ -99,7 +122,6 @@ function Block(args)
 
 	this.Draw = function(rc)
 	{
-		console.log("d");
 		rc.drawImage(this.image, 0, 0, 32, 32, this.x, this.y, this.w, this.h);
 		return true;
 	}
@@ -114,6 +136,8 @@ function Bomb(args)
 	if(args == undefined)
 		args = {};
 
+	this.ClassName = "Bomb";
+
 	InheretFrom(this, Entity, args);
 
 	this.magnitude = 2;
@@ -123,8 +147,8 @@ function Bomb(args)
 
 	this.frame_life = 0;
 
-	this.w = 32;
-	this.h = 32;
+	this.w = 16;
+	this.h = 16;
 
 	this.mode = Bomb_Fuse;
 
@@ -138,6 +162,8 @@ function Bomb(args)
 	this.current_frame = this.fuse_frames[0];
 	this.current_frame_index = 0;
 
+	this.draw_boxes = [];
+
 	this.counter = 0;
 
 	this.Update = function(elapsedTime)
@@ -147,6 +173,13 @@ function Bomb(args)
 
 			if(this.mode == Bomb_Fuse)
 			{
+				// create the particles
+				for(var i = 0; i < RandomInt(15) + 5; i++)
+				{
+					var particle = new Particle({x: this.x, y: this.y, life: RandomFloat(0.8)});
+					CurrentContext.entities.push(particle);
+				}
+
 				this.mode = Bomb_Blow;
 				this.life = 0.16;
 				this.lived = 0.0;
@@ -191,7 +224,67 @@ function Bomb(args)
 		}
 		if(this.mode == Bomb_Blow)
 		{
-			// get the explosion cross and check the collisions * magnitude
+			this.draw_boxes = [];
+			var up = false,
+				down = false,
+				left = false,
+				right = false;
+
+			for(var i = 0; i < this.magnitude; i++)
+			{
+
+				// for(var j = 0; j < CurrentContext.entities.length; j++)
+				for(var j = 0; j < Game.Level.static_entities.length; j++)
+				{
+					var entity = Game.Level.static_entities[j];
+
+					if(entity_radius_vert.ClassName == "Particle")
+						continue;
+
+					if(!up)
+					{
+						up = entity.IsCollidingWithAABB_box(this.x+4, (this.y - 16*(i+1)) + 4, 8, 8);
+					}
+					if(!down)
+					{
+						down = entity.IsCollidingWithAABB_box(this.x+4, (this.y + 16*(i+1)) + 4, 8, 8);
+					}
+					
+
+					if(!left)
+					{
+						left = entity.IsCollidingWithAABB_box((this.x - 16*(i+1)) + 4, this.y+4, 8, 8);
+					}
+					if(!right)
+					{
+						right = entity.IsCollidingWithAABB_box((this.x + 16*(i+1)) + 4, this.y+4, 8, 8);
+					}
+
+				}
+
+				if(!up)
+				{
+					this.draw_boxes.push({image: (i != this.magnitude-1) ? Game.Images["BombExplosionVertical"] : Game.Images["BombExplosionUp"], 
+							x: this.x, y: this.y - 16*(i+1)});
+				}
+				if(!down)
+				{
+					this.draw_boxes.push({image: (i != this.magnitude-1) ? Game.Images["BombExplosionVertical"] : Game.Images["BombExplosionDown"],
+							x: this.x, y: this.y + 16*(i+1)});
+				}
+				if(!left)
+				{
+					this.draw_boxes.push({image: (i != this.magnitude-1) ? Game.Images["BombExplosionHorizontal"] : Game.Images["BombExplosionLeft"],
+							x: this.x - 16*(i+1), y: this.y});
+				}
+				if(!right)
+				{
+					this.draw_boxes.push({image: (i != this.magnitude-1) ? Game.Images["BombExplosionHorizontal"] : Game.Images["BombExplosionRight"],
+							x: this.x + 16*(i+1), y: this.y});
+				}
+				// add to the lsit here
+
+			}
 		}
 
 		this.lived += elapsedTime
@@ -210,18 +303,11 @@ function Bomb(args)
 		{
 			this.current_frame = Game.Images["BombExplosionMiddle"];
 
-			for(var i = 0; i < this.magnitude; i++)
+			for(var i = 0; i < this.draw_boxes.length; i++)
 			{
-				rc.drawImage(Game.Images["BombExplosionVertical"], 0, 0, 16, 16, this.x, this.y - 16*(i+1), 16, 16);
-				rc.drawImage(Game.Images["BombExplosionVertical"], 0, 0, 16, 16, this.x, this.y + 16*(i+1), 16, 16);
-				rc.drawImage(Game.Images["BombExplosionHorizontal"], 0, 0, 16, 16, this.x - 16*(i+1), this.y, 16, 16);
-				rc.drawImage(Game.Images["BombExplosionHorizontal"], 0, 0, 16, 16, this.x + 16*(i+1), this.y, 16, 16);
+				var box = this.draw_boxes[i];
+				rc.drawImage(box.image, 0, 0, 16, 16, box.x, box.y, 16, 16);
 			}
-
-			rc.drawImage(Game.Images["BombExplosionDown"], 0, 0, 16, 16, this.x, this.y + 16*(this.magnitude+1), 16, 16);
-			rc.drawImage(Game.Images["BombExplosionUp"], 0, 0, 16, 16, this.x, this.y - 16*(this.magnitude+1), 16, 16);
-			rc.drawImage(Game.Images["BombExplosionLeft"], 0, 0, 16, 16, this.x - 16*(this.magnitude+1), this.y, 16, 16);
-			rc.drawImage(Game.Images["BombExplosionRight"], 0, 0, 16, 16, this.x + 16*(this.magnitude+1), this.y, 16, 16);
 		}
 		
 		rc.drawImage(this.current_frame, 0, 0, 16, 16, this.x, this.y, 16, 16);
@@ -240,6 +326,8 @@ function Player(args)
 {
 	if(args == undefined)
 		args = {};
+
+	this.ClassName = "Player";
 
 	InheretFrom(this, Entity, args);
 
@@ -277,8 +365,8 @@ function Player(args)
 		if(keyboard.keyPressed("j"))
 		{
 			var bomb = new Bomb({
-				x: Math.floor(this.x),
-				y: Math.floor(this.y)
+				x: Math.floor((this.x+8)/16) * 16,
+				y: Math.floor((this.y+8)/16) * 16
 			});
 			CurrentContext.entities.push(bomb);
 		}
@@ -424,6 +512,8 @@ function Level(args)
 {
 	if(args == undefined)
 		args = {};
+
+	this.ClassName = "Level";
 
 	this.tiles = [];
 	this.background_image = Game.Images["Background"];
@@ -630,9 +720,9 @@ Game.MainMenu = function(elapsedTime)
 	Game.Buffer().drawImage(Game.Images["MainMenuBackground"], 0, 0, Game.Width, Game.Height);
 
 	// Randomly display particles on the screen
-	if(RandomInt(100) < 15)
+	if(RandomInt(100) < 25)
 	{
-		var particle = new Particle({x: RandomInt(Game.Width), y: Game.Height, image: Game.Images["BoxParticle"], w: 10, h: 10, life: RandomFloat(2)})
+		var particle = new Particle({x: RandomInt(Game.Width), y: Game.Height, image: Game.Images["BoxParticle"], w: 8, h: 8, life: RandomFloat(2)})
 		CurrentContext.entities.push(particle);
 	}
 
@@ -677,7 +767,15 @@ Game.Playing = function(elapsedTime)
 	for(var i = 0; i < CurrentContext.entities.length; i++)
 	{
 		var entity = CurrentContext.entities[i];
-		var death = entity.Update(elapsedTime);
+		var death = true;
+		if(entity.ClassName == "Particle")
+		{
+			death = entity.Update(elapsedTime, particle_splash);
+		}
+		else
+		{
+			death = entity.Update(elapsedTime);
+		}
 
 		if(!death)
 		{

@@ -36,4 +36,33 @@ function Entity(args)
 
 		return true;
 	}
+
+	this.IsCollidingWithAABB_box = function(x, y, w, h)
+	{
+
+		// console.log(x, y, w, h)
+		// console.log(">", this.x, this.y, this.w, this.h);
+
+		if(x > this.x+this.w)
+		{
+			return false;
+		}
+
+		if(x+w < this.x)
+		{
+			return false;
+		}
+
+		if(y > this.y+this.h)
+		{
+			return false;
+		}
+
+		if(y+h < this.y)
+		{
+			return false;
+		}
+
+		return true;
+	}
 }
