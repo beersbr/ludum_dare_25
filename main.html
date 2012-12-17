@@ -657,6 +657,8 @@ Game.LastTime = 0.0;
 Game.CurrentTime = +new Date();
 Game.ElapsedTime = 0.0;
 
+Game.Score = 0;	
+
 Game.AssetsNumber = 0;
 Game.AssetsLoaded = 0;
 
@@ -841,6 +843,17 @@ Game.Run = function()
 	requestAnimFrame(Game.Run);
 }
 
+Game.DrawMenu = function()
+{
+	Game.Buffer().fillRect(0, 17*16, Game.Width, Game.Height);
+	Game.Buffer().save();
+
+	Game.Buffer().fillStyle = "rbg(255, 255, 255)";
+	Game.Buffer().fillText("Score: "+Game.Score, 10, 17*16.5 );
+
+	Game.Buffer().restore();
+}
+
 Game.MainMenu = function(elapsedTime)
 {
 	Game.Buffer().drawImage(Game.Images["MainMenuBackground"], 0, 0, Game.Width, Game.Height);
@@ -957,6 +970,7 @@ Game.Playing = function(elapsedTime)
 	}	
 
 	Game.Player.Draw(Game.Buffer());
+	Game.DrawMenu();
 }
 
 window.onload = function()
