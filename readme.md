@@ -20,3 +20,8 @@ You can see the game at: http://brettbeers.com/portfolio/LD25/main.html
 
 #### Sound:
 	I used the songs from https://soundcloud.com/tunespiff.
+
+### What I would have liked to do:
+	My original plan was to have several guys run away from you while trying to build houses. You would blow up the houses or people. The goal would be to not let the little towns people build their houses and upgrade them to police stations so that they could fight back and get you.
+
+	I spent far too much time trying to think of the "best way" to do something so i wrote and rewrote and white boarded again and again... when really I could have just brute forced the game with plenty of time to spare.
