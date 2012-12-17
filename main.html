@@ -115,8 +115,13 @@ function Dude(args)
 	this.frame_index = 0;
 	this.counter = 0;
 
+	this.dead = false;
+
 	this.Update = function(elapsedTime)
 	{
+		if(this.dead == true)
+			return true;
+
 		if(this.counter % 6 == 0)
 		{
 			this.frame_index += 1;
@@ -258,6 +263,47 @@ function Bomb(args)
 
 			for(var i = 0; i < this.magnitude; i++)
 			{
+
+				for(var j = 0; j < CurrentContext.entities.length; j++)
+				{
+					var entity = CurrentContext.entities[j];
+					var hit = false;
+
+					if(entity.IsCollidingWithAABB_box(this.x, this.y-16*(i+1), 16, 16))
+					{
+						hit = true;
+					}
+
+					if(entity.IsCollidingWithAABB_box(this.x, this.y+16*(i+1), 16, 16))
+					{
+						hit = true;
+					}
+
+					if(entity.IsCollidingWithAABB_box(this.x-16*(i+1), this.y, 16, 16))
+					{
+						hit = true;
+					}
+
+					if(entity.IsCollidingWithAABB_box(this.x+16*(i+1), this.y-16*(i+1), 16, 16))
+					{
+						hit = true;
+					}
+
+					if(hit)
+					{
+						if(entity.ClassName == "Bomb")
+						{
+							entity.mode = Bomb_Blow;
+							entity.life = 0.16;
+						}
+
+						if(entity.ClassName == "Dude")
+						{
+							entity.dead = true;
+						}
+					}
+
+				}
 
 				// for(var j = 0; j < CurrentContext.entities.length; j++)
 				for(var j = 0; j < Game.Level.static_entities.length; j++)
@@ -553,19 +599,29 @@ function Level(args)
 	this.static_entities = [];
 	var counter = 0;
 
+	this.cl_map = [];
+
 	this.InitLevel = function()
 	{
 		for(var i = 0; i < 25; i++)
 		{
 			counter = 0;
+			this.cl_map[i] = [];
+
 			for(var j = 0; j < 17; j++)
 			{
+				this.cl_map[i][j] = [];	
 				
+
 				if(counter % 2 == 0 && j % 2 == 0 && i % 3 == 0)
 				{
+					
 					var block = new Block({x: i*16, y: j*16});
 					this.static_entities.push(block);
 					this.background_context.drawImage(block.image, 0, 0, 32, 32, i*16, j*16, 16, 16);
+
+					this.cl_map[i][j].push(block);
+
 				} 
 				counter += 1;
 			}
@@ -773,12 +829,22 @@ Game.MainMenu = function(elapsedTime)
 		}
 	}
 
+	if(CurrentContext.timer > 2.0)
+	{
+		Game.Buffer().fillText("Press Enter to play", 160, 160)
+	}
+	else
+	{
+		Game.Buffer().fillText("Loading...", 178, 160)	
+	}
+
 	//draw the entities
 	for(var i = 0; i < CurrentContext.entities.length; i++)
 	{
 		var entity = CurrentContext.entities[i];
 		entity.Draw(Game.Buffer());
 	}
+
 }
 
 Game.PauseMenu = function(elapsedTime)
@@ -795,10 +861,20 @@ Game.Playing = function(elapsedTime)
 
 	if(RandomInt(100) < 5)
 	{
-		var rx = RandomInt(25)*16;
-		var ry = RandomInt(17)*16;
+		var filled = true;
+		while(filled)
+		{
+			var rx = RandomInt(25);
+			var ry = RandomInt(17);
 
-		var guy = new Dude({x: rx, y: ry});
+			if(Game.Level.cl_map[rx][ry].length == 0)
+			{
+				filled = false;
+			}
+		}
+		
+
+		var guy = new Dude({x: rx*16, y: ry*16});
 		CurrentContext.entities.push(guy);
 	}
 
