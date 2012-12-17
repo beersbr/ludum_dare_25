@@ -120,7 +120,7 @@ function Dude(args)
 	this.Update = function(elapsedTime)
 	{
 		if(this.dead == true)
-			return true;
+			return false;
 
 		if(this.counter % 6 == 0)
 		{
@@ -657,6 +657,27 @@ Game.LastTime = 0.0;
 Game.CurrentTime = +new Date();
 Game.ElapsedTime = 0.0;
 
+Game.AssetsNumber = 0;
+Game.AssetsLoaded = 0;
+
+Game.AssetMark = function(image)
+{
+	image.onload = function()
+	{
+		Game.AssetsLoaded += 1;
+	}
+}
+
+Game.IsLoaded = function()
+{
+	if(Game.AssetsLoaded == Game.AssetsNumber)
+		return true;
+
+	return false;
+}
+
+Game.Loaded = false;
+
 Game.GetElapsedTime = function()
 {
 	Game.LastTime = Game.CurrentTime;
@@ -664,6 +685,8 @@ Game.GetElapsedTime = function()
 	Game.ElapsedTime = Game.CurrentTime - Game.LastTime;
 	return (Game.ElapsedTime/1000);
 }
+
+ROCKBLOCKLOADED = false;
 
 Game.Initialize = function()
 {
@@ -681,72 +704,95 @@ Game.Initialize = function()
 	// init images
 	Game.Images["MainMenuBackground"] = new Image();
 	Game.Images["MainMenuBackground"].src = "img/MainMenu.png";
+	Game.AssetMark(Game.Images["MainMenuBackground"]);
 
 	Game.Images["RedParticle"] = new Image();
 	Game.Images["RedParticle"].src = "img/RedParticle.png";
+	Game.AssetMark(Game.Images["RedParticle"]);
 
 	Game.Images["SpatterParticle"] = new Image();
 	Game.Images["SpatterParticle"].src = "img/SpatterParticle.png";
+	Game.AssetMark(Game.Images["SpatterParticle"]);
 
 	Game.Images["BoxParticle"] = new Image();
 	Game.Images["BoxParticle"].src = "img/BoxParticle.png";
+	Game.AssetMark(Game.Images["BoxParticle"]);
 
 	Game.Images["RockBlock"] = new Image();
 	Game.Images["RockBlock"].src = "img/RockBlock.png";
+	Game.AssetMark(Game.Images["RockBlock"]);
 
 	Game.Images["Bomb0"] = new Image();
 	Game.Images["Bomb0"].src = "img/Bomb0.png";
+	Game.AssetMark(Game.Images["Bomb0"]);
 
 	Game.Images["Bomb1"] = new Image();
 	Game.Images["Bomb1"].src = "img/Bomb1.png";
+	Game.AssetMark(Game.Images["Bomb1"]);
 
 	Game.Images["Bomb2"] = new Image();
 	Game.Images["Bomb2"].src = "img/Bomb2.png";
+	Game.AssetMark(Game.Images["Bomb2"]);
 
 	Game.Images["Bomb3"] = new Image();
 	Game.Images["Bomb3"].src = "img/Bomb3.png";
+	Game.AssetMark(Game.Images["Bomb3"]);
 
 	Game.Images["Bomb4"] = new Image();
 	Game.Images["Bomb4"].src = "img/Bomb4.png";
+	Game.AssetMark(Game.Images["Bomb4"]);
 
 	Game.Images["Bomb5"] = new Image();
 	Game.Images["Bomb5"].src = "img/Bomb5.png";
+	Game.AssetMark(Game.Images["Bomb5"]);
 
 	Game.Images["BombExplosionMiddle"] = new Image();
 	Game.Images["BombExplosionMiddle"].src = "img/BombExplosionMiddle.png";
+	Game.AssetMark(Game.Images["BombExplosionMiddle"]);
 
 	Game.Images["BombExplosionHorizontal"] = new Image();
 	Game.Images["BombExplosionHorizontal"].src = "img/BombExplosionHorizontal.png";
+	Game.AssetMark(Game.Images["BombExplosionHorizontal"]);
 
 	Game.Images["BombExplosionVertical"] = new Image();
 	Game.Images["BombExplosionVertical"].src = "img/BombExplosionVertical.png";
+	Game.AssetMark(Game.Images["BombExplosionVertical"]);
 
 	Game.Images["BombExplosionLeft"] = new Image();
 	Game.Images["BombExplosionLeft"].src = "img/BombExplosionLeft.png";
+	Game.AssetMark(Game.Images["BombExplosionLeft"]);
 
 	Game.Images["BombExplosionUp"] = new Image();
 	Game.Images["BombExplosionUp"].src = "img/BombExplosionUp.png";
+	Game.AssetMark(Game.Images["BombExplosionUp"]);
 
 	Game.Images["BombExplosionRight"] = new Image();
 	Game.Images["BombExplosionRight"].src = "img/BombExplosionRight.png";
+	Game.AssetMark(Game.Images["BombExplosionRight"]);
 
 	Game.Images["BombExplosionDown"] = new Image();
 	Game.Images["BombExplosionDown"].src = "img/BombExplosionDown.png";
+	Game.AssetMark(Game.Images["BombExplosionDown"]);
 
 	Game.Images["GuyFront"] = new Image();
 	Game.Images["GuyFront"].src = "img/GuyFront0.png";
+	Game.AssetMark(Game.Images["GuyFront"]);
 
 	Game.Images["Background"] = new Image();
 	Game.Images["Background"].src = "img/PlayBackground.png";
+	Game.AssetMark(Game.Images["Background"]);
 
 	Game.Images["PlayerSpriteSheet"] = new Image();
 	Game.Images["PlayerSpriteSheet"].src = "img/PlayerSpriteSheet.png";
+	Game.AssetMark(Game.Images["PlayerSpriteSheet"]);
 
 	Game.Images["BadGuy"] = new Image();
 	Game.Images["BadGuy"].src = "img/BadGuyWalking.png";
+	Game.AssetMark(Game.Images["BadGuy"]);
+
+	Game.AssetsNumber = 22;
 
 	Game.Level = new Level();
-	Game.Level.InitLevel();
 
 	Game.Player = new Player({x: 16, y:100});
 }
@@ -812,6 +858,7 @@ Game.MainMenu = function(elapsedTime)
 	{
 		if(CurrentContext.timer > 2.0)
 		{
+			Game.Level.InitLevel();
 			Game.State = GameState_Playing;
 			CurrentContext.entities = [];
 		}
@@ -829,7 +876,7 @@ Game.MainMenu = function(elapsedTime)
 		}
 	}
 
-	if(CurrentContext.timer > 2.0)
+	if(Game.IsLoaded())
 	{
 		Game.Buffer().fillText("Press Enter to play", 160, 160)
 	}

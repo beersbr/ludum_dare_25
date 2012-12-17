@@ -6,6 +6,11 @@ Move using the WASD keys
 
 Drop a bomb with the J key
 
+UPDATE: 
+	In an effort to have something that i can call a game I am sort of short cutting the theme: There are purple people that will spawn randomly around the map. All they want to do is exist... you need to blow them up.
+
+You can see the game at: http://brettbeers.com/portfolio/LD25/main.html
+
 ### Credits
 
 #### Graphics:
