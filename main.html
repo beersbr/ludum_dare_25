@@ -300,6 +300,7 @@ function Bomb(args)
 						if(entity.ClassName == "Dude")
 						{
 							entity.dead = true;
+							Game.Score += 1;
 						}
 					}
 
@@ -848,8 +849,9 @@ Game.DrawMenu = function()
 	Game.Buffer().fillRect(0, 17*16, Game.Width, Game.Height);
 	Game.Buffer().save();
 
-	Game.Buffer().fillStyle = "rbg(255, 255, 255)";
-	Game.Buffer().fillText("Score: "+Game.Score, 10, 17*16.5 );
+	Game.Buffer().fillStyle = "white";
+	Game.Buffer().fillText(("Score: "+Game.Score), 10, 17*16.8 );
+	Game.Buffer().stroke();
 
 	Game.Buffer().restore();
 }
