@@ -704,6 +704,10 @@ Game.Initialize = function()
 	Game.Keyboard = new KeyboardHandler();
 	Game.State = GameState_MainMenu;
 
+	Game.BackgroundMusic = new Audio();
+	Game.BackgroundMusic.src = "audio/AndSoItBegins.mp3";
+	Game.BackgroundMusic.play();
+
 	// init images
 	Game.Images["MainMenuBackground"] = new Image();
 	Game.Images["MainMenuBackground"].src = "img/MainMenu.png";
